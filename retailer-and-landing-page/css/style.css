@@ -1,9 +1,4 @@
-/* Reflex — the Nairobi ledger look.
- *
- * Warm paper, ink borders, hard shadows, mono for anything factual.
- * No gradients, no glass, no stock-template softness. It should look like
- * someone stamped it by hand, because someone did.
- */
+
 
 :root {
   --paper: #f4f0e6;
