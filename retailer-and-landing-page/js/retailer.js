@@ -10,10 +10,12 @@
    ANNE'S ENDPOINTS GO HERE.
    When Anne sends the endpoints, change ONLY the next two lines.
    --------------------------------------------------------------------- */
-var ENDPOINT_LIST   = "http://127.0.0.1/api/requests/mine/";    /* the ask-for-the-list counter */
-var ENDPOINT_CREATE = "http://127.0.0.1/api/requests/create/";  /* the hand-over counter */
-/* AFTER DEPLOYMENT the address changes. Anne will send the new one.
-   Change ONLY the "http://127.0.0.1" part on both lines. Keep the rest. */
+var ENDPOINT_LIST   = "/api/requests/mine/";    /* the ask-for-the-list counter */
+var ENDPOINT_CREATE = "/api/requests/create/";  /* the hand-over counter */
+/* Relative on purpose: no computer name, no port number. The page asks
+   the place that served it. That works on Anne's localhost today and on
+   the deployed address later, with nothing to change, and it removes the
+   browser's same-place problem whenever Django serves this page. */
 
 /* ---------------------------------------------------------------------
    FIELD NAMES.
