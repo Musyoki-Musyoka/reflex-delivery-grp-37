@@ -10,8 +10,10 @@
    ANNE'S ENDPOINTS GO HERE.
    When Anne sends the endpoints, change ONLY the next two lines.
    --------------------------------------------------------------------- */
-var ENDPOINT_LIST   = "/api/deliveries?scope=shop";   /* the ask-for-the-list counter */
-var ENDPOINT_CREATE = "/api/deliveries";              /* the hand-over-a-new-delivery counter */
+var ENDPOINT_LIST   = "http://127.0.0.1/api/requests/mine/";    /* the ask-for-the-list counter */
+var ENDPOINT_CREATE = "http://127.0.0.1/api/requests/create/";  /* the hand-over counter */
+/* AFTER DEPLOYMENT the address changes. Anne will send the new one.
+   Change ONLY the "http://127.0.0.1" part on both lines. Keep the rest. */
 
 /* ---------------------------------------------------------------------
    FIELD NAMES.
@@ -21,7 +23,7 @@ var ENDPOINT_CREATE = "/api/deliveries";              /* the hand-over-a-new-del
 var FIELD_NAMES = {
   backend_customer_name:  "customer_name",
   backend_customer_phone: "customer_phone",
-  backend_address:        "address",
+  backend_address:        "customer_address",   /* Anne's name for the address */
   backend_item:           "item_description"
 };
 
@@ -104,6 +106,7 @@ var FIELD_NAMES = {
     payload[FIELD_NAMES.backend_customer_phone] = fields.customer_phone;
     payload[FIELD_NAMES.backend_address]        = fields.address;
     payload[FIELD_NAMES.backend_item]           = fields.item_description;
+    payload["delivery_status"]                  = "pending";  /* Anne asked for this; new = pending */
 
     return fetch(ENDPOINT_CREATE, {
       method: "POST",
@@ -239,8 +242,9 @@ var FIELD_NAMES = {
     fetchCreate(fields).then(function (row) {
       form.reset();
       var ref = row && row.reference ? " " + row.reference : "";
+      var st0 = row && (row.status || row.delivery_status);
       successBox.textContent =
-        "Logged." + ref + " Status: " + statusLabel(row && row.status) +
+        "Logged." + ref + " Status: " + statusLabel(st0) +
         ". It stays Pending until a dispatcher assigns a rider.";
       successBox.hidden = false;
       setTimeout(function () { successBox.hidden = true; }, 8000);
