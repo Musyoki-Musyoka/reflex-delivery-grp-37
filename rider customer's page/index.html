@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rider customer's page </title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="header">
+        <h1>Reflex</h1>
+
+        <div>
+            <!-- Added id="riderName" so JavaScript can target and update this -->
+            <span id="riderName">Rider: Loading...</span>
+            <button onclick="goBack()">Back</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <h2>Customer Details</h2>
+
+        <div class="customer-card">
+            <h3 id="customerName">John Kamau</h3>
+
+            <div class="detail">
+                <strong>Phone:</strong>
+                <a id="customerPhone" href="tel:0712345678">0712 345 678</a>
+            </div>
+
+            <div class="detail">
+                <strong>Address:</strong>
+                <span id="customerAddress">Eldoret, Uasin Gishu</span>
+            </div>
+
+            <div class="detail">
+                <strong>Item:</strong>
+                <span id="customerItem">Samsung TV</span>
+            </div>
+
+            <div class="detail">
+                <strong>Status:</strong>
+                <span id="deliveryStatus" class="status assigned">Assigned</span>
+            </div>
+
+            <div class="actions">
+                <button id="pickupButton" class="action-button" onclick="pickUpDelivery()">
+                    Pick Up
+                </button>
+
+                <button id="confirmButton" class="action-button" onclick="confirmDelivery()" disabled>
+                    Confirm Delivery
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
