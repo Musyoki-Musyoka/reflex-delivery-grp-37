@@ -1,9 +1,4 @@
-/* Reflex — the Nairobi ledger look.
- *
- * Warm paper, ink borders, hard shadows, mono for anything factual.
- * No gradients, no glass, no stock-template softness. It should look like
- * someone stamped it by hand, because someone did.
- */
+
 
 :root {
   --paper: #f4f0e6;
@@ -35,7 +30,7 @@ body {
 
 .green { color: var(--green); }
 
-/* ------------------------------------------------------ top bar */
+
 
 .topbar {
   display: flex;
@@ -97,7 +92,7 @@ body {
 
 .home-link:hover { color: var(--green); border-color: var(--green); }
 
-/* ------------------------------------------------------ landing hero */
+
 
 .hero {
   display: grid;
@@ -137,7 +132,7 @@ body {
   padding: 8px 4px;
 }
 
-/* the example receipt */
+
 
 .ticket {
   background: var(--card);
@@ -186,7 +181,7 @@ body {
   text-align: right;
 }
 
-/* ------------------------------------------------------ choose your desk */
+
 
 .seats {
   max-width: 1100px;
@@ -277,7 +272,7 @@ footer {
   background: var(--card);
 }
 
-/* ------------------------------------------------------ retailer desk */
+
 
 .demo-banner {
   background: #fff6e6;
@@ -441,7 +436,7 @@ button:disabled { opacity: 0.6; cursor: default; }
   text-align: center;
 }
 
-/* ------------------------------------------------------ responsive */
+
 
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; padding-top: 40px; }
