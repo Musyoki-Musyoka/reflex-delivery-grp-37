@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from delivery.models import rider, retailer, dispatcher
+from models import rider, retailer, dispatcher
 
 
 class Command(BaseCommand):
