@@ -41,12 +41,7 @@ var FIELD_NAMES = {
   var errorEl = document.getElementById("form-error");
   var submitBtn = document.getElementById("submit-btn");
 
-  /* ---------- honest demo fallback ----------
-   * If the backend cannot be reached (double-clicking the file, backend
-   * switched off), the page stores labelled practice records in the
-   * browser and shows the amber stripe. The moment a real backend answers,
-   * the stripe hides itself. Nothing here ever pretends to be live data.
-   */
+  
   var DEMO_KEY = "reflex_demo_deliveries";
   var demoMode = false;
 
@@ -84,7 +79,7 @@ var FIELD_NAMES = {
     return "RFX-" + ("000000" + (max + 1)).slice(-6);
   }
 
-  /* ---------- the two walks to the counter ---------- */
+  
 
   function fetchList() {
     return fetch(ENDPOINT_LIST, { headers: { Accept: "application/json" } })
@@ -135,9 +130,7 @@ var FIELD_NAMES = {
       demoMode = false;
       return r.json();
     }).catch(function (error) {
-      /* A response from the API (including a 400 validation error) is real
-       * feedback, not an offline failure. Show it instead of creating a
-       * misleading demo request. */
+      
       if (error && error.httpStatus) throw error;
       demoMode = true;
       var list = readDemo();
@@ -157,7 +150,7 @@ var FIELD_NAMES = {
     });
   }
 
-  /* ---------- drawing the page ---------- */
+  
 
   function esc(value) {
     var d = document.createElement("div");
@@ -229,7 +222,7 @@ var FIELD_NAMES = {
     });
   }
 
-  /* ---------- the one clickable thing ---------- */
+  
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -277,5 +270,5 @@ var FIELD_NAMES = {
   });
 
   refresh();
-  setInterval(refresh, 5000);   /* the list asks again every 5 seconds, so statuses move by themselves */
+  setInterval(refresh, 5000);   
 })();
