@@ -126,3 +126,5 @@ MAILERS = {
 }
 
 CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS').split(',') if os.getenv('CORS_ALLOWED_ORIGINS') else ["http://localhost:5500"]
+
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS').split(',') if os.getenv('CSRF_TRUSTED_ORIGINS') else ["http://localhost:5500"]
