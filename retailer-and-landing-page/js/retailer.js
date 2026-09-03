@@ -10,8 +10,8 @@
    ANNE'S ENDPOINTS GO HERE.
    When Anne sends the endpoints, change ONLY the next two lines.
    --------------------------------------------------------------------- */
-var ENDPOINT_LIST   = "/api/requests/mine/";    /* the ask-for-the-list counter */
-var ENDPOINT_CREATE = "/api/requests/create/";  /* the hand-over counter */
+var ENDPOINT_LIST   = "http://127.0.0.1:8000/api/requests/mine/";    /* the ask-for-the-list counter */
+var ENDPOINT_CREATE = "http://127.0.0.1:8000/api/requests/create/";  /* the hand-over counter */
 /* Relative on purpose: no computer name, no port number. The page asks
    the place that served it. That works on Anne's localhost today and on
    the deployed address later, with nothing to change, and it removes the
@@ -117,12 +117,28 @@ var FIELD_NAMES = {
     }).then(function (r) {
       if (!r.ok) {
         return r.json().catch(function () { return {}; }).then(function (j) {
-          throw new Error(j.message || j.error || ("bad status " + r.status));
+          var message = j.message || j.error || j.detail;
+          if (!message) {
+            Object.keys(j).some(function (key) {
+              if (Array.isArray(j[key]) && j[key].length) {
+                message = key + ": " + j[key][0];
+                return true;
+              }
+              return false;
+            });
+          }
+          var error = new Error(message || ("bad status " + r.status));
+          error.httpStatus = r.status;
+          throw error;
         });
       }
       demoMode = false;
       return r.json();
-    }).catch(function () {
+    }).catch(function (error) {
+      /* A response from the API (including a 400 validation error) is real
+       * feedback, not an offline failure. Show it instead of creating a
+       * misleading demo request. */
+      if (error && error.httpStatus) throw error;
       demoMode = true;
       var list = readDemo();
       var row = {
