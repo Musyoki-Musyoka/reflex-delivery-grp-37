@@ -1,440 +1,150 @@
-// ===============================
-// REFLEX RIDER FRONTEND
-// ===============================
-
-const API_BASE_URL = "http://127.0.0.1:8000/api";
-
-let riders = [];
-let selectedRider = null;
-let deliveries = [];
+const API_BASE = "https://reflex-sprint-awqy.onrender.com/api"; // adjust to your actual API root
 
 const riderList = document.getElementById("rider-list");
 const message = document.getElementById("message");
 
+let currentRider = null; // keep track so pickUpDelivery/markDelivered can re-render
+let activeScanner = null; // keep track so we can stop a running scanner before starting another
 
-// ===============================
-// LOAD RIDERS FROM BACKEND
-// ===============================
-
+// ---- Load riders from backend and build buttons ----
 async function loadRiders() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/riders/`);
+  const res = await fetch(`${API_BASE}/riders/`);
+  const riders = await res.json();
 
-        if (!response.ok) {
-            throw new Error(`Failed to load riders: ${response.status}`);
-        }
+  riderList.innerHTML = "";
+  riders.forEach((rider) => {
+    const button = document.createElement("button");
+    button.textContent = rider.rider_name;
+    button.classList.add("rider-button");
 
-        const data = await response.json();
-
-        console.log("Riders received:", data);
-
-        // Handle either a direct array or Django REST Framework pagination
-        const data = await response.json();
-
-console.log("Riders received:", data);
-
-const backendRiders = Array.isArray(data) ? data : (data.results || []);
-
-riders = backendRiders.map(rider => ({
-    id: rider.rider_id,
-    name: rider.rider_name,
-    phone: rider.rider_phone
-}));
-
-displayRiders();
-
-    } catch (error) {
-        console.error("Error loading riders:", error);
-
-        riderList.innerHTML = "";
-
-        message.innerHTML = `
-            <p class="error-message">
-                Could not connect to the backend.
-                Make sure Django is running.
-            </p>
-        `;
-    }
-}
-
-
-// ===============================
-// DISPLAY RIDERS
-// ===============================
-
-function displayRiders() {
-    riderList.innerHTML = "";
-
-    if (riders.length === 0) {
-        riderList.innerHTML = "<p>No riders found.</p>";
-        return;
-    }
-
-    riders.forEach(rider => {
-        const button = document.createElement("button");
-
-        button.textContent = rider.name;
-        button.classList.add("rider-button");
-
-        button.addEventListener("click", () => {
-            selectedRider = rider;
-            loadRiderDeliveries(rider);
-        });
-
-        riderList.appendChild(button);
+    button.addEventListener("click", () => {
+      currentRider = rider;
+      showRiderDeliveries(rider);
     });
+
+    riderList.appendChild(button);
+  });
 }
 
+// ---- Load and render a rider's deliveries from backend ----
+async function showRiderDeliveries(rider) {
+  message.innerHTML = "";
 
-// ===============================
-// LOAD RIDER'S ASSIGNED DELIVERIES
-// ===============================
+  const heading = document.createElement("h2");
+  heading.textContent = `Welcome, ${rider.rider_name}`;
+  message.appendChild(heading);
 
-async function loadRiderDeliveries(rider) {
-    try {
-        message.innerHTML = "<p>Loading deliveries...</p>";
+  const deliveryHeading = document.createElement("h3");
+  deliveryHeading.textContent = "My Deliveries";
+  message.appendChild(deliveryHeading);
 
-        const response = await fetch(
-            `${API_BASE_URL}/rider/assigned/`
-        );
+  const res = await fetch(
+    `${API_BASE}/rider/assigned/?rider_id=${rider.rider_id}`
+  );
+  const riderDeliveries = await res.json();
 
-        if (!response.ok) {
-            throw new Error(
-                `Failed to load deliveries: ${response.status}`
-            );
-        }
+  riderDeliveries.forEach((delivery) => {
+    const deliveryCard = document.createElement("div");
+    deliveryCard.classList.add("delivery-card");
 
-        const data = await response.json();
+    deliveryCard.innerHTML = ` <h3>${delivery.customer_name}</h3> <p> <strong>Phone:</strong> <a href="tel:${delivery.customer_phone}">${ delivery.customer_phone }</a> </p> <p><strong>Address:</strong> ${delivery.customer_address}</p> <p><strong>Item:</strong> ${delivery.item_description}</p> <p><strong>Status:</strong> ${delivery.delivery_status}</p> <div class="qr-code" id="qr-${delivery.request_id}"></div> ${ delivery.delivery_status === "ASSIGNED" ? `<button class="pickup-button" onclick="pickUpDelivery('${delivery.request_id}')">Pick Up</button>` : "" } ${ delivery.delivery_status === "PICKED" ? `<button class="scan-button" onclick="startScan('${delivery.request_id}')">Scan to Confirm Delivery</button> <div id="scanner-${delivery.request_id}" class="scanner-container"></div> <button class="manual-entry-button" onclick="promptManualCode('${delivery.request_id}')">Enter code manually</button>` : "" } `;
 
-        console.log("Assigned deliveries received:", data);
+    message.appendChild(deliveryCard);
 
-        // Handle either a direct array or Django REST Framework pagination
-        const assignedDeliveries =
-            Array.isArray(data) ? data : (data.results || []);
-
-        /*
-         * The backend endpoint is expected to return the deliveries
-         * assigned to the current rider.
-         *
-         * If the endpoint returns deliveries for all riders, we filter
-         * them using rider_id/riderId.
-         */
-        deliveries = assignedDeliveries.filter(delivery => {
-
-            const deliveryRiderId =
-                delivery.rider_id ??
-                delivery.riderId ??
-                delivery.rider?.id;
-
-            return String(deliveryRiderId) === String(rider.id);
-        });
-
-        /*
-         * If the endpoint already returns only the selected rider's
-         * deliveries but doesn't include a rider ID, use everything
-         * returned by the endpoint.
-         */
-        if (
-            assignedDeliveries.length > 0 &&
-            deliveries.length === 0
-        ) {
-            const hasRiderInformation = assignedDeliveries.some(
-                delivery =>
-                    delivery.rider_id !== undefined ||
-                    delivery.riderId !== undefined ||
-                    delivery.rider !== undefined
-            );
-
-            if (!hasRiderInformation) {
-                deliveries = assignedDeliveries;
-            }
-        }
-
-        showRiderDeliveries(rider);
-
-    } catch (error) {
-        console.error("Error loading deliveries:", error);
-
-        message.innerHTML = `
-            <h2>Welcome, ${rider.name}</h2>
-            <p class="error-message">
-                Could not load your assigned deliveries.
-            </p>
-        `;
-    }
-}
-
-
-// ===============================
-// DISPLAY RIDER'S DELIVERIES
-// ===============================
-
-function showRiderDeliveries(rider) {
-
-    message.innerHTML = "";
-
-    const heading = document.createElement("h2");
-    heading.textContent = `Welcome, ${rider.name}`;
-
-    message.appendChild(heading);
-
-    const deliveryHeading = document.createElement("h3");
-    deliveryHeading.textContent = "My Deliveries";
-
-    message.appendChild(deliveryHeading);
-
-    if (deliveries.length === 0) {
-        const noDeliveries = document.createElement("p");
-        noDeliveries.textContent = "No deliveries assigned.";
-        message.appendChild(noDeliveries);
-        return;
-    }
-
-    deliveries.forEach(delivery => {
-
-        const deliveryCard = document.createElement("div");
-
-        deliveryCard.classList.add("delivery-card");
-
-        // Support common backend field names
-        const customerName =
-            delivery.customer_name ??
-            delivery.customerName ??
-            delivery.customer?.name ??
-            "Customer";
-
-        const phone =
-            delivery.phone ??
-            delivery.customer_phone ??
-            delivery.customer?.phone ??
-            "";
-
-        const address =
-    delivery.customer_address ??
-    delivery.address ??
-    delivery.delivery_address ??
-    "";
-
-const item =
-    delivery.item_description ??
-    delivery.item ??
-    delivery.item_name ??
-    "";
-
-const status =
-    delivery.delivery_status ??
-    delivery.status ??
-    "ASSIGNED";
-    const displayStatus =
-    status === "ASSIGNED"
-        ? "Assigned"
-        : status === "PICKED"
-        ? "Picked Up"
-        : status;
-
-        const confirmationCode =
-            delivery.confirmation_code ??
-            delivery.confirmationCode ??
-            "";
-
-        const deliveryId =
-            delivery.id ??
-            delivery.request_id;
-
-        deliveryCard.innerHTML = `
-            <h3>${customerName}</h3>
-
-            <p>
-                <strong>Phone:</strong>
-                <a href="tel:${phone}">
-                    ${phone}
-                </a>
-            </p>
-
-            <p>
-                <strong>Address:</strong>
-                ${address}
-            </p>
-
-            <p>
-                <strong>Item:</strong>
-                ${item}
-            </p>
-
-            <p>
-                <strong>Status:</strong>
-                ${displayStatus}
-            </p>
-
-            ${
-                confirmationCode
-                    ? `
-                        <div class="qr-code" id="qr-${deliveryId}"></div>
-
-                        <p class="confirmation-code">
-                            ${confirmationCode}
-                        </p>
-                    `
-                    : ""
-            }
-
-            ${
-    status.toUpperCase() === "ASSIGNED"
-        ? `
-            <button
-                class="pickup-button"
-                onclick="pickUpDelivery('${deliveryId}')">
-                Pick Up
-            </button>
-        `
-        : ""
-}
-
-        `;
-
-        message.appendChild(deliveryCard);
-
-        // Generate QR code only when a confirmation code exists
-        if (confirmationCode) {
-            const qrElement =
-                document.getElementById(`qr-${deliveryId}`);
-
-            if (qrElement && typeof QRCode !== "undefined") {
-                new QRCode(qrElement, {
-                    text: confirmationCode,
-                    width: 150,
-                    height: 150
-                });
-            }
-        }
+    new QRCode(document.getElementById(`qr-${delivery.request_id}`), {
+      text: delivery.confirmation_code || delivery.reference,
+      width: 150,
+      height: 150,
     });
+  });
 }
 
-
-// ===============================
-// PICK UP DELIVERY
-// ===============================
-
+// ---- Mark picked up via backend, then re-render from fresh data ----
 async function pickUpDelivery(deliveryId) {
+  const res = await fetch(`${API_BASE}/requests/${deliveryId}/picked/`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+  });
 
-    const delivery = deliveries.find(
-        delivery =>
-            String(delivery.id ?? delivery.request_id) ===
-            String(deliveryId)
-    );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    alert(err.error || "Could not update delivery status.");
+    return;
+  }
 
-    if (!delivery) {
-        alert("Delivery not found.");
-        return;
-    }
+  alert("Delivery picked up successfully.");
 
-    const currentStatus =
-    delivery.delivery_status ??
-    delivery.status ??
-    "ASSIGNED";
-    // Only Assigned deliveries can be picked up
-    if (currentStatus.toUpperCase() !== "ASSIGNED") {
-        alert(
-            "This delivery has already been picked up or cannot be picked up."
-        );
-        return;
-    }
-
-    try {
-
-        const response = await fetch(
-            `${API_BASE_URL}/requests/${deliveryId}/picked/`,
-            {
-                method: "PATCH"
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error(
-                `Pick up failed: ${response.status}`
-            );
-        }
-
-        alert("Delivery picked up successfully.");
-
-        // Refresh deliveries from backend
-        await loadRiderDeliveries(selectedRider);
-
-    } catch (error) {
-
-        console.error("Error picking up delivery:", error);
-
-        alert(
-            "Could not pick up the delivery. Please try again."
-        );
-    }
+  if (currentRider) {
+    showRiderDeliveries(currentRider); // re-fetch and re-render, no stale local state
+  }
 }
 
+// ---- QR scanning to confirm delivery ----
+async function startScan(deliveryId) {
+  // Stop any existing scanner first (only one can run at a time)
+  if (activeScanner) {
+    await activeScanner.stop().catch(() => {});
+    activeScanner = null;
+  }
 
-// ===============================
-// DELIVER DELIVERY
-// ===============================
+  const containerId = `scanner-${deliveryId}`;
+  const scanner = new Html5Qrcode(containerId);
+  activeScanner = scanner;
 
-async function deliverDelivery(deliveryId) {
-
-    const delivery = deliveries.find(
-        delivery =>
-            String(delivery.id ?? delivery.request_id) ===
-            String(deliveryId)
-    );
-
-    if (!delivery) {
-        alert("Delivery not found.");
-        return;
-    }
-
-    const currentStatus =
-        delivery.status ?? "";
-
-    // Only Picked Up deliveries can be delivered
-    if (
-        currentStatus.toLowerCase() !== "picked up" &&
-        currentStatus.toLowerCase() !== "picked_up"
-    ) {
-        alert(
-            "This delivery cannot be marked as delivered yet."
-        );
-        return;
-    }
-
-    try {
-
-        const response = await fetch(
-            `${API_BASE_URL}/requests/${deliveryId}/delivered/`,
-            {
-                method: "PATCH"
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error(
-                `Delivery update failed: ${response.status}`
-            );
-        }
-
-        alert("Delivery marked as delivered successfully.");
-
-        // Refresh deliveries from backend
-        await loadRiderDeliveries(selectedRider);
-
-    } catch (error) {
-
-        console.error("Error delivering delivery:", error);
-
-        alert(
-            "Could not mark the delivery as delivered. Please try again."
-        );
-    }
+  scanner
+    .start(
+      { facingMode: "environment" }, // rear camera
+      { fps: 10, qrbox: 200 },
+      (decodedText) => {
+        // Scan succeeded — stop camera, then confirm with backend
+        scanner
+          .stop()
+          .then(() => {
+            activeScanner = null;
+            markDelivered(deliveryId, decodedText);
+          })
+          .catch(() => {
+            activeScanner = null;
+            markDelivered(deliveryId, decodedText);
+          });
+      },
+      (errorMessage) => {
+        // fires continuously while no QR is in frame — ignore
+      }
+    )
+    .catch((err) => {
+      alert("Could not access camera: " + err);
+    });
 }
 
+// ---- Fallback: manual code entry if camera/scan fails ----
+function promptManualCode(deliveryId) {
+  const code = prompt("Enter the confirmation code shown on the delivery:");
+  if (code) {
+    markDelivered(deliveryId, code.trim());
+  }
+}
 
-// ===============================
-// START APPLICATION
-// ===============================
+// ---- Confirm delivery via backend, then re-render from fresh data ----
+async function markDelivered(deliveryId, scannedCode) {
+  const res = await fetch(`${API_BASE}/requests/${deliveryId}/delivered/`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code: scannedCode }),
+  });
 
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    alert(err.error || "Could not confirm delivery.");
+    return;
+  }
+
+  alert("Delivery confirmed and marked as delivered.");
+
+  if (currentRider) {
+    showRiderDeliveries(currentRider); // re-fetch and re-render, no stale local state
+  }
+}
+
+// ---- Init ----
 loadRiders();
