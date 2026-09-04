@@ -74,15 +74,12 @@ class RiderMarkPickedView(APIView):
         return Response(DeliveryRequestSerializer(req).data)
 
 class RiderMarkDeliveredView(APIView):
-    # PATCH /requests/<pk>/deliver/  body: { "code": "scanned-qr-value" }
     def patch(self, request, pk):
         req = get_object_or_404(delivery_request, pk=pk)
         assignment_obj = get_object_or_404(assignment, delivery_request=req)
         scanned_code = request.data.get('code')
 
-        # naive MVP check — validate the scanned code matches what was generated for this request
-        expected_code = f"REQ-{req.pk}"  # replace with your real QR generation scheme
-        if scanned_code != expected_code:
+        if scanned_code != req.confirmation_code:
             return Response({'error': 'Invalid QR code'}, status=400)
 
         req.delivery_status = 'DELIVERED'
@@ -94,7 +91,7 @@ class RiderMarkDeliveredView(APIView):
             assignment=assignment_obj
         )
         return Response(ConfirmationSerializer(conf).data, status=201)
-
+    
 class RiderListView(generics.ListAPIView):
     queryset = rider.objects.all()
     serializer_class = RiderSerializer

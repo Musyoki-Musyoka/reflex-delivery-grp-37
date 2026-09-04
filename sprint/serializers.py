@@ -10,7 +10,8 @@ class DeliveryRequestSerializer(serializers.ModelSerializer):
         model = delivery_request
         fields = [
             'request_id', 'customer_name', 'customer_phone', 'customer_address',
-            'item_description', 'delivery_status', 'status', 'retailer', 'dispatcher'
+            'item_description', 'delivery_status', 'status', 'confirmation_code',
+            'retailer', 'dispatcher'
         ]
         # These values are set by the server as the delivery moves through
         # its workflow. A retailer creating a request must not send them.
