@@ -10,8 +10,8 @@
    ANNE'S ENDPOINTS GO HERE.
    When Anne sends the endpoints, change ONLY the next two lines.
    --------------------------------------------------------------------- */
-var ENDPOINT_LIST   = "http://127.0.0.1:8000/api/requests/mine/";    /* the ask-for-the-list counter */
-var ENDPOINT_CREATE = "http://127.0.0.1:8000/api/requests/create/";  /* the hand-over counter */
+var ENDPOINT_LIST   = "https://reflex-sprint-awqy.onrender.com/api/requests/mine/";    /* the ask-for-the-list counter */
+var ENDPOINT_CREATE = "https://reflex-sprint-awqy.onrender.com/api/requests/create/";  /* the hand-over counter */
 /* Relative on purpose: no computer name, no port number. The page asks
    the place that served it. That works on Anne's localhost today and on
    the deployed address later, with nothing to change, and it removes the
@@ -41,17 +41,22 @@ var FIELD_NAMES = {
   var errorEl = document.getElementById("form-error");
   var submitBtn = document.getElementById("submit-btn");
 
-  
+  /* ---------- honest demo fallback ----------
+   * If the backend cannot be reached (double-clicking the file, backend
+   * switched off), the page stores labelled practice records in the
+   * browser and shows the amber stripe. The moment a real backend answers,
+   * the stripe hides itself. Nothing here ever pretends to be live data.
+   */
   var DEMO_KEY = "reflex_demo_deliveries";
   var demoMode = false;
 
   function seed() {
     return [
-      { id: 2, reference: "RFX-000002", customer_name: "Grace Njeri",
+      { request_id: 2, reference: "RFX-000002", confirmation_code: "RFX-000002", customer_name: "Grace Njeri",
         customer_phone: "+254733555666", address: "Thika, Section 9, Block C Flat 12",
         item_description: "Two boxes of Amoxil 500mg, pharmacy order",
         status: "pending", created_at: new Date(Date.now() - 25 * 60000).toISOString() },
-      { id: 1, reference: "RFX-000001", customer_name: "Peter Otieno",
+      { request_id: 1, reference: "RFX-000001", confirmation_code: "RFX-000001", customer_name: "Peter Otieno",
         customer_phone: "+254722333444", address: "Ruai, Kangundo Road, House 45B",
         item_description: "Samsung 43 inch TV, one carton, sealed",
         status: "assigned", created_at: new Date(Date.now() - 90 * 60000).toISOString() }
@@ -79,7 +84,7 @@ var FIELD_NAMES = {
     return "RFX-" + ("000000" + (max + 1)).slice(-6);
   }
 
-  
+  /* ---------- the two walks to the counter ---------- */
 
   function fetchList() {
     return fetch(ENDPOINT_LIST, { headers: { Accept: "application/json" } })
@@ -99,10 +104,13 @@ var FIELD_NAMES = {
 
   function fetchCreate(fields) {
     var payload = {};
+    var reference = fields.reference;
     payload[FIELD_NAMES.backend_customer_name]  = fields.customer_name;
     payload[FIELD_NAMES.backend_customer_phone] = fields.customer_phone;
     payload[FIELD_NAMES.backend_address]        = fields.address;
     payload[FIELD_NAMES.backend_item]           = fields.item_description;
+    payload["reference"]                        = reference;
+    payload["confirmation_code"]                = reference;
     payload["delivery_status"]                  = "pending";  /* Anne asked for this; new = pending */
 
     return fetch(ENDPOINT_CREATE, {
@@ -130,13 +138,16 @@ var FIELD_NAMES = {
       demoMode = false;
       return r.json();
     }).catch(function (error) {
-      
+      /* A response from the API (including a 400 validation error) is real
+       * feedback, not an offline failure. Show it instead of creating a
+       * misleading demo request. */
       if (error && error.httpStatus) throw error;
       demoMode = true;
       var list = readDemo();
       var row = {
-        id: Date.now(),
+        request_id: Date.now(),
         reference: nextRef(list),
+        confirmation_code: fields.reference,
         customer_name: fields.customer_name,
         customer_phone: fields.customer_phone,
         address: fields.address,
@@ -150,7 +161,7 @@ var FIELD_NAMES = {
     });
   }
 
-  
+  /* ---------- drawing the page ---------- */
 
   function esc(value) {
     var d = document.createElement("div");
@@ -205,11 +216,12 @@ var FIELD_NAMES = {
       return (
         '<div class="request-item">' +
           '<div class="request-top">' +
-            '<span class="request-ref">' + esc(d.reference || ("#" + d.id)) + "</span>" +
+            '<span class="request-ref">' + esc(d.reference || ("#" + d.request_id)) + "</span>" +
             '<span class="badge ' + statusClass(d.status) + '">' + esc(statusLabel(d.status)) + "</span>" +
           "</div>" +
           '<div class="request-who">' + esc(d.customer_name) + " &middot; " + esc(d.address) + "</div>" +
           '<div class="request-item-desc">' + esc(d.item_description) + "</div>" +
+          '<div class="request-confirmation">Confirmation code: ' + esc(d.confirmation_code) + "</div>" +
           '<div class="request-when">LOGGED ' + esc(when(d.created_at)) + "</div>" +
         "</div>"
       );
@@ -222,7 +234,7 @@ var FIELD_NAMES = {
     });
   }
 
-  
+  /* ---------- the one clickable thing ---------- */
 
   form.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -250,7 +262,10 @@ var FIELD_NAMES = {
     submitBtn.disabled = true;
     submitBtn.textContent = "Logging…";
 
-    fetchCreate(fields).then(function (row) {
+    fetchList().then(function (existing) {
+      fields.reference = nextRef(existing);
+      return fetchCreate(fields);
+    }).then(function (row) {
       form.reset();
       var ref = row && row.reference ? " " + row.reference : "";
       var st0 = row && (row.status || row.delivery_status);
@@ -270,5 +285,5 @@ var FIELD_NAMES = {
   });
 
   refresh();
-  setInterval(refresh, 5000);   
+  setInterval(refresh, 5000);   /* the list asks again every 5 seconds, so statuses move by themselves */
 })();
