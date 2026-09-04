@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reflex — dispatch desk</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <a class="topbar-brand" href="index.html">
+      <span class="wordmark">REFLEX</span>
+      <span class="desk-stamp mono">DISPATCH DESK</span>
+    </a>
+    <a class="home-link mono" href="index.html">&larr; CHOOSE A DESK</a>
+  </header>
+
+  <div class="demo-banner mono" id="demo-banner" hidden>
+    PRACTICE DATA &mdash; the backend is not reachable right now, so this page shows labelled demo
+    records. This stripe hides itself the moment the real backend answers.
+  </div>
+
+  <main class="retailer-grid">
+
+    <section class="panel">
+      <p class="kicker mono">OPEN WORK</p>
+      <h2>Unassigned requests.</h2>
+      <p class="hint"><span class="count-kicker" id="open-count"></span></p>
+      <div id="open-list" class="request-list">Loading&hellip;</div>
+    </section>
+
+    <section class="panel">
+      <p class="kicker mono">HAND IT OVER</p>
+      <h2>Assign a rider.</h2>
+      <p class="hint">Pick a request on the left, then a rider here. One tap each.</p>
+
+      <div id="assign-area">
+        <div class="empty">Nothing selected yet. Choose a request on the left.</div>
+      </div>
+
+      <div class="success" id="success-box" hidden></div>
+      <p class="form-error" id="error-box" hidden></p>
+    </section>
+
+  </main>
+
+  <footer class="mono">&copy; 2026 REFLEX &mdash; MADE IN NAIROBI</footer>
+
+  <script src="js/dispatcher.js"></script>
+</body>
+</html>
